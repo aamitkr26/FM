@@ -60,7 +60,7 @@ export class AlertService {
     if (vehicleId) where.vehicleId = vehicleId;
     if (type) where.type = type;
     if (severity) where.severity = severity;
-    if (resolved !== undefined) where.resolved = resolved;
+    if (resolved !== undefined) where.resolved = Boolean(resolved);
 
     if (startDate || endDate) {
       where.createdAt = {};
@@ -71,7 +71,7 @@ export class AlertService {
     const alerts = await prisma.alert.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: parseInt(limit as any, 10),
+      take: Number(limit) || 100,
       include: {
         vehicle: {
           select: {

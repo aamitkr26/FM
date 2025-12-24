@@ -32,13 +32,12 @@ export class AlertsController {
       const alert = await alertService.getAlertById(id);
 
       if (!alert) {
-        res.status(404).json({ error: 'Alert not found' });
-        return;
+        return res.status(404).json({ error: 'Alert not found' });
       }
 
-      res.json(alert);
+      return res.json(alert);
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
