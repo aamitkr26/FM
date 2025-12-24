@@ -1,7 +1,7 @@
 // API Service Layer for Fleet Management System
 // Centralized API communication with the backend
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 class ApiError extends Error {
   constructor(message, status, data) {

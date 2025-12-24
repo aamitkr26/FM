@@ -73,9 +73,9 @@ export class VehiclesController {
       const { id } = req.params;
       const result = await vehicleService.deleteVehicle(id);
 
-      res.json(result);
+      return res.json(result);
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
@@ -86,9 +86,9 @@ export class VehiclesController {
     try {
       const stats = await vehicleService.getVehicleStatistics();
 
-      res.json(stats);
+      return res.json(stats);
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 }

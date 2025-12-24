@@ -59,6 +59,9 @@ function parseCorsOrigins(
     origins.add('http://localhost:3000');
   }
 
+  // Always allow production frontend in development for testing
+  origins.add('https://fm-puce-iota.vercel.app');
+
   return Array.from(origins);
 }
 
