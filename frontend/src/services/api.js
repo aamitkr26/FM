@@ -30,15 +30,29 @@ const request = async (endpoint, options = {}) => {
       ...getAuthHeaders(),
       ...options.headers,
     },
+    credentials: 'include',
   };
 
   try {
     const response = await fetch(url, config);
     let data = null;
+    
     try {
       data = await response.json();
     } catch {
       data = null;
+    }
+
+    // Handle 401 Unauthorized - clear auth and redirect to login
+    if (response.status === 401) {
+      localStorage.removeItem('fleet.token');
+      localStorage.removeItem('fleet.role');
+      localStorage.removeItem('fleet.email');
+      // Only redirect if not already on login page
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+      throw new ApiError('Session expired. Please login again.', 401, data);
     }
 
     if (!response.ok) {

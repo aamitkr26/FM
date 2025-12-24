@@ -10,37 +10,36 @@ import { Settings } from './components/pages/Settings';
 import { ReportsData } from './components/pages/ReportsData';
 import { CompanyRoutes } from './components/pages/CompanyRoutes';
 export default function App() {
-    const [isLoggedIn, setIsLoggedIn] = useState(() => {
-        const token = localStorage.getItem('fleet.token');
-        const role = localStorage.getItem('fleet.role');
-        return Boolean(token && role);
-    });
-    const [userRole, setUserRole] = useState(() => {
-        const token = localStorage.getItem('fleet.token');
-        const role = localStorage.getItem('fleet.role');
-        return token && role ? role : null;
-    });
-    const [currentPage, setCurrentPage] = useState('dashboard');
-    const [selectedVehicleId, setSelectedVehicleId] = useState(undefined);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    const token = localStorage.getItem('fleet.token');
+    return !!token;
+  });
+  const [userRole, setUserRole] = useState(() => {
+    return localStorage.getItem('fleet.role') || 'user';
+  });
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [selectedVehicleId, setSelectedVehicleId] = useState(undefined);
 
-    const handleLogin = (role) => {
-        setUserRole(role);
-        setIsLoggedIn(true);
-        setCurrentPage('dashboard');
-    };
-    const handleLogout = () => {
-        localStorage.removeItem('fleet.token');
-        localStorage.removeItem('fleet.role');
-        localStorage.removeItem('fleet.email');
-        setIsLoggedIn(false);
-        setUserRole(null);
-        setCurrentPage('dashboard');
-        setSelectedVehicleId(undefined);
-    };
-    const handleNavigate = (page, vehicleId) => {
-        setCurrentPage(page);
-        setSelectedVehicleId(vehicleId);
-    };
+  const handleLogin = (role) => {
+    setUserRole(role);
+    setIsLoggedIn(true);
+    setCurrentPage('dashboard');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('fleet.token');
+    localStorage.removeItem('fleet.role');
+    localStorage.removeItem('fleet.email');
+    setIsLoggedIn(false);
+    setUserRole(null);
+    setCurrentPage('dashboard');
+    setSelectedVehicleId(undefined);
+  };
+
+  const handleNavigate = (page, vehicleId) => {
+    setCurrentPage(page);
+    setSelectedVehicleId(vehicleId);
+  };
     if (!isLoggedIn) {
         return <LoginPage onLogin={handleLogin}/>;
     }

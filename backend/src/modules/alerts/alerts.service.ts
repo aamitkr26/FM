@@ -6,43 +6,48 @@ import { broadcastAlert } from '../../websocket/broadcaster';
 export class AlertService {
   /**
    * Create a new alert and broadcast it
+   * SAFE even if vehicleId is missing or invalid
    */
   async createAlert(input: CreateAlertInput) {
     try {
       const alert = await prisma.alert.create({
         data: {
-          vehicleId: input.vehicleId,
+          vehicleId: input.vehicleId ?? null,
           type: input.type,
           severity: input.severity,
           title: input.title,
           message: input.message,
-          metadata: input.metadata,
+          metadata: input.metadata ?? {},
+          resolved: false,
         },
-        include: {
-          vehicle: {
-            select: {
-              id: true,
-              imei: true,
-              registrationNo: true,
-            },
-          },
-        },
+        // IMPORTANT:
+        // ❌ Do NOT include vehicle here
+        // It can break if vehicleId is orphaned
       });
 
-      logger.info(`Alert created: ${alert.type} - ${alert.severity} - ${alert.title}`);
+      logger.info(
+        `Alert created: ${alert.type} | ${alert.severity} | ${alert.title}`
+      );
 
-      // Broadcast alert to WebSocket clients
-      broadcastAlert(alert);
+      // Broadcast minimal safe payload
+      broadcastAlert({
+        id: alert.id,
+        type: alert.type,
+        severity: alert.severity,
+        title: alert.title,
+        message: alert.message,
+        createdAt: alert.createdAt,
+      });
 
       return alert;
     } catch (error) {
-      logger.error(`Failed to create alert: ${error}`);
+      logger.error('Failed to create alert', error);
       throw error;
     }
   }
 
   /**
-   * Get alerts with filters
+   * Get alerts with filters (FULLY SAFE)
    */
   async getAlerts(query: GetAlertsQuery) {
     const {
@@ -50,17 +55,24 @@ export class AlertService {
       type,
       severity,
       resolved,
-      limit = 100,
+      limit,
       startDate,
       endDate,
     } = query;
+
+    const take =
+      limit && !isNaN(Number(limit)) ? Number(limit) : 50;
 
     const where: any = {};
 
     if (vehicleId) where.vehicleId = vehicleId;
     if (type) where.type = type;
     if (severity) where.severity = severity;
-    if (resolved !== undefined) where.resolved = resolved;
+
+    if (resolved !== undefined) {
+      where.resolved =
+        resolved === 'true' || resolved === true;
+    }
 
     if (startDate || endDate) {
       where.createdAt = {};
@@ -71,41 +83,21 @@ export class AlertService {
     const alerts = await prisma.alert.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: parseInt(limit as any, 10),
-      include: {
-        vehicle: {
-          select: {
-            id: true,
-            imei: true,
-            registrationNo: true,
-            make: true,
-            model: true,
-          },
-        },
-      },
+      take,
+      // ❌ NO include vehicle
     });
 
     return alerts;
   }
 
   /**
-   * Get alert by ID
+   * Get alert by ID (SAFE)
    */
   async getAlertById(id: string) {
-    const alert = await prisma.alert.findUnique({
+    return prisma.alert.findUnique({
       where: { id },
-      include: {
-        vehicle: {
-          select: {
-            id: true,
-            imei: true,
-            registrationNo: true,
-          },
-        },
-      },
+      // ❌ NO include vehicle
     });
-
-    return alert;
   }
 
   /**
@@ -116,42 +108,55 @@ export class AlertService {
       where: { id },
       data: {
         resolved: true,
-        resolvedBy,
+        resolvedBy: resolvedBy ?? 'system',
         resolvedAt: new Date(),
       },
     });
 
-    logger.info(`Alert resolved: ${alert.id} by ${resolvedBy || 'system'}`);
+    logger.info(
+      `Alert resolved: ${alert.id} by ${resolvedBy ?? 'system'}`
+    );
 
     return alert;
   }
 
   /**
-   * Get alert statistics
+   * Get alert statistics (SAFE on empty / dirty DB)
    */
-  async getAlertStatistics(vehicleId?: string, days: number = 7) {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+  async getAlertStatistics(vehicleId?: string, days = 7) {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
 
-    const where: any = {
-      createdAt: { gte: startDate },
+    const baseWhere: any = {
+      createdAt: { gte: since },
     };
 
-    if (vehicleId) where.vehicleId = vehicleId;
+    if (vehicleId) baseWhere.vehicleId = vehicleId;
 
-    const [total, unresolved, critical, warnings] = await Promise.all([
-      prisma.alert.count({ where }),
-      prisma.alert.count({ where: { ...where, resolved: false } }),
-      prisma.alert.count({ where: { ...where, severity: 'critical' } }),
-      prisma.alert.count({ where: { ...where, severity: 'warning' } }),
+    const [
+      total,
+      unresolved,
+      critical,
+      warning,
+    ] = await Promise.all([
+      prisma.alert.count({ where: baseWhere }),
+      prisma.alert.count({
+        where: { ...baseWhere, resolved: false },
+      }),
+      prisma.alert.count({
+        where: { ...baseWhere, severity: 'critical' },
+      }),
+      prisma.alert.count({
+        where: { ...baseWhere, severity: 'warning' },
+      }),
     ]);
 
     return {
       total,
       unresolved,
-      critical,
-      warnings,
       resolved: total - unresolved,
+      critical,
+      warning,
     };
   }
 }
