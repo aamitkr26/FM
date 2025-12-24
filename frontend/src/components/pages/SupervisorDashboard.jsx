@@ -80,30 +80,41 @@ export function SupervisorDashboard({ onNavigate, selectedVehicleId }) {
       try {
         setLoading(true);
         
-        // Fetch in parallel
-        const [statsRes, vehiclesRes, alertsRes] = await Promise.all([
+        // Fetch with individual error handling for partial failures
+        const results = await Promise.allSettled([
           dashboardApi.getStats(),
           dashboardApi.getLiveVehicles(),
           alertsApi.getAll({ resolved: false, limit: 10 })
         ]);
 
-        void statsRes;
-        setVehicles(transformVehicles(vehiclesRes.data || []));
-        setAlerts(alertsRes.data || []);
+        // Process each result individually
+        const [statsResult, vehiclesResult, alertsResult] = results;
+        
+        // Handle vehicles data
+        if (vehiclesResult.status === 'fulfilled') {
+          setVehicles(transformVehicles(vehiclesResult.value.data || []));
+        } else {
+          console.error('Failed to fetch vehicles:', vehiclesResult.reason);
+          setVehicles([]);
+        }
+        
+        // Handle alerts data
+        if (alertsResult.status === 'fulfilled') {
+          setAlerts(alertsResult.value.data || []);
+        } else {
+          console.error('Failed to fetch alerts:', alertsResult.reason);
+          setAlerts([]);
+        }
+        
+        // Handle stats (optional for dashboard functionality)
+        if (statsResult.status === 'rejected') {
+          console.error('Failed to fetch stats:', statsResult.reason);
+        }
+        
         setError(null);
       } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        
-        // Enhanced error handling
-        if (err.status === 500) {
-          setError('Server error - please try again');
-        } else if (err.status === 401) {
-          setError('Authentication expired - please login again');
-        } else if (err.status >= 400 && err.status < 500) {
-          setError('Invalid request - please refresh');
-        } else {
-          setError('Failed to load dashboard data');
-        }
+        console.error('Unexpected error in dashboard data fetch:', err);
+        setError('Failed to load dashboard data');
         
         // Set fallback data to prevent UI crashes
         setVehicles([]);
