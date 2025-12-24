@@ -30,26 +30,33 @@ const envSchema = z.object({
   SIMULATION_ENABLE_TAMPERING: trimmed(z.string()).default('true'),
 });
 
-function normalizeOrigin(value: string): string {
-  return new URL(value).origin;
-}
+const normalizeOrigin = (url: string): string => {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return url;
+  }
+};
 
-function parseCorsOrigins(
+const parseCorsOrigins = (
   frontendUrl: string,
-  extraOriginsCsv: string,
-  nodeEnv: 'development' | 'production' | 'test',
-): string[] {
+  corsOrigins: string,
+  nodeEnv: string,
+): string[] => {
   const origins = new Set<string>();
+
+  // Always add the frontend URL
   origins.add(normalizeOrigin(frontendUrl));
 
-  for (const raw of extraOriginsCsv.split(',')) {
-    const trimmed = raw.trim();
-    if (!trimmed) continue;
-    try {
-      origins.add(normalizeOrigin(trimmed));
-    } catch {
-      // ignore invalid origin entries
-    }
+  // Add additional origins from CORS_ORIGINS
+  if (corsOrigins) {
+    corsOrigins.split(',').forEach((origin) => {
+      const trimmed = origin.trim();
+      if (trimmed) {
+        origins.add(normalizeOrigin(trimmed));
+      }
+    });
   }
 
   // In production, keep the allowlist tight by default.
@@ -60,10 +67,12 @@ function parseCorsOrigins(
   }
 
   // Always allow production frontend in development for testing
-  origins.add('https://fm-puce-iota.vercel.app');
+  if (frontendUrl.includes('vercel.app')) {
+    origins.add(normalizeOrigin(frontendUrl));
+  }
 
   return Array.from(origins);
-}
+};
 
 const parsed = envSchema.safeParse(process.env);
 
@@ -74,21 +83,17 @@ if (!parsed.success) {
 }
 
 export const env = {
-  database: {
-    url: parsed.data.DATABASE_URL,
-  },
-  jwt: {
-    secret: parsed.data.JWT_SECRET,
-    refreshSecret: parsed.data.JWT_REFRESH_SECRET,
-    expiresIn: parsed.data.JWT_EXPIRES_IN,
-    refreshExpiresIn: parsed.data.JWT_REFRESH_EXPIRES_IN,
-  },
   server: {
-    // Render/Docker often expects port 10000 in production if PORT isn't explicitly set.
-    port: parsed.data.PORT ?? (parsed.data.NODE_ENV === 'production' ? 10000 : 4000),
+    port: parsed.data.PORT || 4000,
     env: parsed.data.NODE_ENV,
     isDevelopment: parsed.data.NODE_ENV === 'development',
     isProduction: parsed.data.NODE_ENV === 'production',
+  },
+  auth: {
+    jwtSecret: parsed.data.JWT_SECRET,
+    jwtRefreshSecret: parsed.data.JWT_REFRESH_SECRET,
+    jwtExpiresIn: parsed.data.JWT_EXPIRES_IN,
+    jwtRefreshExpiresIn: parsed.data.JWT_REFRESH_EXPIRES_IN,
   },
   logger: {
     level: parsed.data.LOG_LEVEL,

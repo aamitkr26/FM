@@ -1,168 +1,153 @@
 import { prisma } from '../../config/database';
 import { logger } from '../../config/logger';
-import { CreateAlertInput, GetAlertsQuery } from './alerts.types';
-import { broadcastAlert } from '../../websocket/broadcaster';
 
-export class AlertService {
+export class AlertsService {
   /**
-   * Create a new alert and broadcast it
-   * SAFE even if vehicleId is missing or invalid
+   * Get all alerts with optional filtering
    */
-  async createAlert(input: CreateAlertInput) {
+  async getAllAlerts(options: {
+    resolved?: boolean;
+    limit?: number;
+    offset?: number;
+  }) {
     try {
-      const alert = await prisma.alert.create({
-        data: {
-          vehicleId: input.vehicleId ?? null,
-          type: input.type,
-          severity: input.severity,
-          title: input.title,
-          message: input.message,
-          metadata: input.metadata ?? {},
-          resolved: false,
+      const { resolved, limit, offset } = options;
+      
+      const whereClause: any = {};
+      if (resolved !== undefined) {
+        whereClause.resolved = resolved;
+      }
+
+      const alerts = await prisma.alert.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+        include: {
+          vehicle: {
+            select: {
+              id: true,
+              imei: true,
+              registrationNo: true,
+            },
+          },
         },
-        // IMPORTANT:
-        // ❌ Do NOT include vehicle here
-        // It can break if vehicleId is orphaned
       });
 
-      logger.info(
-        `Alert created: ${alert.type} | ${alert.severity} | ${alert.title}`
-      );
-
-      // Broadcast minimal safe payload
-      broadcastAlert({
-        id: alert.id,
-        type: alert.type,
-        severity: alert.severity,
-        title: alert.title,
-        message: alert.message,
-        createdAt: alert.createdAt,
-      });
-
-      return alert;
+      return alerts || [];
     } catch (error) {
-      logger.error('Failed to create alert', error);
+      logger.error(`Failed to get alerts: ${error}`);
       throw error;
     }
   }
 
   /**
-   * Get alerts with filters (FULLY SAFE)
-   */
-  async getAlerts(query: GetAlertsQuery) {
-    const {
-      vehicleId,
-      type,
-      severity,
-      resolved,
-      limit,
-      startDate,
-      endDate,
-    } = query;
-
-    const take =
-      limit && !isNaN(Number(limit)) ? Number(limit) : 50;
-
-    const where: any = {};
-
-    if (vehicleId) where.vehicleId = vehicleId;
-    if (type) where.type = type;
-    if (severity) where.severity = severity;
-    if (resolved !== undefined) where.resolved = resolved;
-
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) where.createdAt.gte = new Date(startDate);
-      if (endDate) where.createdAt.lte = new Date(endDate);
-    }
-
-    const alerts = await prisma.alert.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: take,
-      include: {
-        vehicle: {
-          select: {
-            id: true,
-            imei: true,
-            registrationNo: true,
-            make: true,
-            model: true,
-          },
-        },
-      },
-    });
-
-    return alerts;
-  }
-
-  /**
-   * Get alert by ID (SAFE)
+   * Get alert by ID
    */
   async getAlertById(id: string) {
-    return prisma.alert.findUnique({
-      where: { id },
-      // ❌ NO include vehicle
-    });
+    try {
+      const alert = await prisma.alert.findUnique({
+        where: { id },
+        include: {
+          vehicle: {
+            select: {
+              id: true,
+              imei: true,
+              registrationNo: true,
+            },
+          },
+        },
+      });
+
+      return alert;
+    } catch (error) {
+      logger.error(`Failed to get alert by ID: ${error}`);
+      throw error;
+    }
   }
 
   /**
-   * Resolve an alert
+   * Create alert
    */
-  async resolveAlert(id: string, resolvedBy?: string) {
-    const alert = await prisma.alert.update({
-      where: { id },
-      data: {
-        resolved: true,
-        resolvedBy: resolvedBy ?? 'system',
-        resolvedAt: new Date(),
-      },
-    });
+  async createAlert(alertData: any) {
+    try {
+      const alert = await prisma.alert.create({
+        data: alertData,
+        include: {
+          vehicle: {
+            select: {
+              id: true,
+              imei: true,
+              registrationNo: true,
+            },
+          },
+        },
+      });
 
-    logger.info(
-      `Alert resolved: ${alert.id} by ${resolvedBy ?? 'system'}`
-    );
-
-    return alert;
+      return alert;
+    } catch (error) {
+      logger.error(`Failed to create alert: ${error}`);
+      throw error;
+    }
   }
 
   /**
-   * Get alert statistics (SAFE on empty / dirty DB)
+   * Resolve alert
    */
-  async getAlertStatistics(vehicleId?: string, days = 7) {
-    const since = new Date();
-    since.setDate(since.getDate() - days);
+  async resolveAlert(id: string, resolvedBy: string) {
+    try {
+      const alert = await prisma.alert.update({
+        where: { id },
+        data: {
+          resolved: true,
+          resolvedAt: new Date(),
+          resolvedBy
+        },
+        include: {
+          vehicle: {
+            select: {
+              id: true,
+              imei: true,
+              registrationNo: true,
+            },
+          },
+        },
+      });
 
-    const baseWhere: any = {
-      createdAt: { gte: since },
-    };
+      return alert;
+    } catch (error) {
+      logger.error(`Failed to resolve alert: ${error}`);
+      throw error;
+    }
+  }
 
-    if (vehicleId) baseWhere.vehicleId = vehicleId;
+  /**
+   * Unresolve alert
+   */
+  async unresolveAlert(id: string) {
+    try {
+      const alert = await prisma.alert.update({
+        where: { id },
+        data: {
+          resolved: false,
+          resolvedAt: null,
+          resolvedBy: null
+        },
+        include: {
+          vehicle: {
+            select: {
+              id: true,
+              imei: true,
+              registrationNo: true,
+            },
+          },
+        },
+      });
 
-    const [
-      total,
-      unresolved,
-      critical,
-      warning,
-    ] = await Promise.all([
-      prisma.alert.count({ where: baseWhere }),
-      prisma.alert.count({
-        where: { ...baseWhere, resolved: false },
-      }),
-      prisma.alert.count({
-        where: { ...baseWhere, severity: 'critical' },
-      }),
-      prisma.alert.count({
-        where: { ...baseWhere, severity: 'warning' },
-      }),
-    ]);
-
-    return {
-      total,
-      unresolved,
-      resolved: total - unresolved,
-      critical,
-      warning,
-    };
+      return alert;
+    } catch (error) {
+      logger.error(`Failed to unresolve alert: ${error}`);
+      throw error;
+    }
   }
 }

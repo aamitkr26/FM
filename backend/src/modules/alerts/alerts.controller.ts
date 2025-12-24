@@ -1,59 +1,29 @@
 import { Request, Response, NextFunction } from 'express';
-import { AlertService } from './alerts.service';
-import { GetAlertsQuery } from './alerts.types';
-import { AuthRequest } from '../../middleware/auth';
+import { AlertsService } from './alerts.service';
 
-const alertService = new AlertService();
+const alertsService = new AlertsService();
 
 export class AlertsController {
   /**
-   * GET /api/alerts
+   * Get all alerts (GET /api/alerts)
    */
-  async getAlerts(req: Request, res: Response, next: NextFunction) {
+  async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      const query = req.query as GetAlertsQuery;
-      const alerts = await alertService.getAlerts(query);
-
-      res.json({
-        count: alerts.length,
-        data: alerts,
+      const { resolved, limit, offset } = req.query;
+      
+      const alerts = await alertsService.getAllAlerts({
+        resolved: resolved === 'true' ? true : resolved === 'false' ? false : undefined,
+        limit: limit ? parseInt(limit as string, 10) : undefined,
+        offset: offset ? parseInt(offset as string, 10) : undefined
       });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * GET /api/alerts/:id
-   */
-  async getAlertById(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { id } = req.params;
-      const alert = await alertService.getAlertById(id);
-
-      if (!alert) {
-        return res.status(404).json({ error: 'Alert not found' });
-      }
-
-      return res.json(alert);
-    } catch (error) {
-      return next(error);
-    }
-  }
-
-  /**
-   * POST /api/alerts/:id/resolve
-   */
-  async resolveAlert(req: AuthRequest, res: Response, next: NextFunction) {
-    try {
-      const { id } = req.params;
-      const resolvedBy = req.user?.email ?? 'system';
-
-      const alert = await alertService.resolveAlert(id, resolvedBy);
 
       return res.json({
-        message: 'Alert resolved successfully',
-        alert,
+        success: true,
+        message: 'Alerts retrieved successfully',
+        data: {
+          count: alerts.length,
+          alerts
+        }
       });
     } catch (error) {
       return next(error);
@@ -61,20 +31,83 @@ export class AlertsController {
   }
 
   /**
-   * GET /api/alerts/statistics
+   * Get alert by ID (GET /api/alerts/:id)
    */
-  async getStatistics(req: Request, res: Response, next: NextFunction) {
+  async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { vehicleId, days } = req.query;
+      const { id } = req.params;
+      const alert = await alertsService.getAlertById(id);
 
-      const stats = await alertService.getAlertStatistics(
-        vehicleId ? String(vehicleId) : undefined,
-        days ? Number(days) : undefined
-      );
+      if (!alert) {
+        return res.status(404).json({
+          success: false,
+          message: 'Alert not found',
+          data: null
+        });
+      }
 
-      res.json(stats);
+      return res.json({
+        success: true,
+        message: 'Alert retrieved successfully',
+        data: alert
+      });
     } catch (error) {
-      next(error);
+      return next(error);
+    }
+  }
+
+  /**
+   * Resolve alert (PATCH /api/alerts/:id/resolve)
+   */
+  async resolve(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const resolvedBy = (req as any).user?.email || 'system';
+      
+      const alert = await alertsService.resolveAlert(id, resolvedBy);
+
+      if (!alert) {
+        return res.status(404).json({
+          success: false,
+          message: 'Alert not found',
+          data: null
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Alert resolved successfully',
+        data: alert
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  /**
+   * Unresolve alert (PATCH /api/alerts/:id/unresolve)
+   */
+  async unresolve(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      
+      const alert = await alertsService.unresolveAlert(id);
+
+      if (!alert) {
+        return res.status(404).json({
+          success: false,
+          message: 'Alert not found',
+          data: null
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Alert unresolved successfully',
+        data: alert
+      });
+    } catch (error) {
+      return next(error);
     }
   }
 }

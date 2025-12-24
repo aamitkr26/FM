@@ -1,9 +1,11 @@
 import express, { type Express } from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import { env } from './config/env';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
 import { logger } from './config/logger';
+import { wsService } from './websocket';
 
 // Import routes
 import authRoutes from './modules/auth/auth.routes';
@@ -17,6 +19,7 @@ import tripRoutes from './modules/trip/trip.routes';
 
 export function createApp(): Express {
   const app = express();
+  const server = createServer(app);
 
   // Trust proxy (for Render, Heroku, etc.)
   app.set('trust proxy', 1);
@@ -70,6 +73,9 @@ export function createApp(): Express {
   app.use('/api/geofence', geofenceRoutes);
   app.use('/api/trips', tripRoutes);
 
+  // Attach WebSocket server
+  wsService.attach(server);
+
   // 404 handler
   app.use(notFound);
 
@@ -78,3 +84,5 @@ export function createApp(): Express {
 
   return app;
 }
+
+export { createServer };

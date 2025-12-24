@@ -3,13 +3,13 @@ import { logger } from '../../config/logger';
 import { THRESHOLDS, FUEL_EVENT_TYPES, FUEL_PATTERNS, FUEL_SEVERITY } from '../../utils/constants';
 import { TelemetryPayload } from '../telemetry/telemetry.types';
 import { FuelAnalysis } from './fuel.types';
-import { AlertService } from '../alerts/alerts.service';
+import { AlertsService } from '../alerts/alerts.service';
 
 export class FuelEngine {
-  private alertService: AlertService;
+  private alertService: AlertsService;
 
   constructor() {
-    this.alertService = new AlertService();
+    this.alertService = new AlertsService();
   }
 
   /**

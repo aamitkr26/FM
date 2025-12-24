@@ -1,79 +1,56 @@
 import { Request, Response, NextFunction } from 'express';
-import { VehicleService } from './vehicles.service';
-import { CreateVehicleInput, UpdateVehicleInput, GetVehiclesQuery } from './vehicles.types';
+import { VehiclesService } from './vehicles.service';
 
-const vehicleService = new VehicleService();
+const vehiclesService = new VehiclesService();
 
 export class VehiclesController {
   /**
-   * Create vehicle (POST /api/vehicles)
-   */
-  async createVehicle(req: Request, res: Response, next: NextFunction) {
-    try {
-      const input: CreateVehicleInput = req.body;
-      const vehicle = await vehicleService.createVehicle(input);
-
-      res.status(201).json(vehicle);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
    * Get all vehicles (GET /api/vehicles)
    */
-  async getVehicles(req: Request, res: Response, next: NextFunction) {
+  async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      const query = req.query as GetVehiclesQuery;
-      const vehicles = await vehicleService.getVehicles(query);
+      const { status, limit, offset } = req.query;
+      
+      const vehicles = await vehiclesService.getAllVehicles({
+        status: status as string,
+        limit: limit ? parseInt(limit as string, 10) : undefined,
+        offset: offset ? parseInt(offset as string, 10) : undefined
+      });
 
-      res.json({
-        count: vehicles.length,
-        data: vehicles,
+      return res.json({
+        success: true,
+        message: 'Vehicles retrieved successfully',
+        data: {
+          count: vehicles.length,
+          vehicles
+        }
       });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
   /**
    * Get vehicle by ID (GET /api/vehicles/:id)
    */
-  async getVehicleById(req: Request, res: Response, next: NextFunction) {
+  async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const vehicle = await vehicleService.getVehicleById(id);
+      const vehicle = await vehiclesService.getVehicleById(id);
 
-      res.json(vehicle);
-    } catch (error) {
-      next(error);
-    }
-  }
+      if (!vehicle) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vehicle not found',
+          data: null
+        });
+      }
 
-  /**
-   * Update vehicle (PUT /api/vehicles/:id)
-   */
-  async updateVehicle(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { id } = req.params;
-      const input: UpdateVehicleInput = req.body;
-      const vehicle = await vehicleService.updateVehicle(id, input);
-
-      res.json(vehicle);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Delete vehicle (DELETE /api/vehicles/:id)
-   */
-  async deleteVehicle(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { id } = req.params;
-      const result = await vehicleService.deleteVehicle(id);
-
-      return res.json(result);
+      return res.json({
+        success: true,
+        message: 'Vehicle retrieved successfully',
+        data: vehicle
+      });
     } catch (error) {
       return next(error);
     }
@@ -84,9 +61,84 @@ export class VehiclesController {
    */
   async getStatistics(_req: Request, res: Response, next: NextFunction) {
     try {
-      const stats = await vehicleService.getVehicleStatistics();
+      const stats = await vehiclesService.getVehicleStatistics();
+      return res.json({
+        success: true,
+        message: 'Vehicle statistics retrieved successfully',
+        data: stats
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
 
-      return res.json(stats);
+  /**
+   * Create vehicle (POST /api/vehicles)
+   */
+  async create(req: Request, res: Response, next: NextFunction) {
+    try {
+      const vehicleData = req.body;
+      const vehicle = await vehiclesService.createVehicle(vehicleData);
+
+      return res.status(201).json({
+        success: true,
+        message: 'Vehicle created successfully',
+        data: vehicle
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  /**
+   * Update vehicle (PUT /api/vehicles/:id)
+   */
+  async update(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const vehicleData = req.body;
+      
+      const vehicle = await vehiclesService.updateVehicle(id, vehicleData);
+
+      if (!vehicle) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vehicle not found',
+          data: null
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Vehicle updated successfully',
+        data: vehicle
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  /**
+   * Delete vehicle (DELETE /api/vehicles/:id)
+   */
+  async delete(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await vehiclesService.deleteVehicle(id);
+
+      if (!result) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vehicle not found',
+          data: null
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Vehicle deleted successfully',
+        data: result
+      });
     } catch (error) {
       return next(error);
     }

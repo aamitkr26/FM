@@ -1,6 +1,5 @@
 import { prisma } from '../../config/database';
 import { logger } from '../../config/logger';
-import { THRESHOLDS } from '../../utils/constants';
 
 export class DashboardService {
   /**
@@ -9,9 +8,7 @@ export class DashboardService {
   async getFleetStatistics() {
     try {
       const now = new Date();
-      const offlineThreshold = new Date(
-        now.getTime() - THRESHOLDS.DEVICE_OFFLINE_THRESHOLD * 60 * 1000
-      );
+      const offlineThreshold = new Date(now.getTime() - 30 * 60 * 1000); // 30 minutes
 
       // Get all vehicles with last seen status
       const vehicles = await prisma.vehicle.findMany({
@@ -51,8 +48,8 @@ export class DashboardService {
         if (!lastSeen || lastSeen < offlineThreshold) {
           offline++;
         } else {
-          if (lastSpeed > THRESHOLDS.MOVING_SPEED_THRESHOLD) moving++;
-          else if (lastIgnition && lastSpeed > THRESHOLDS.IDLE_SPEED_THRESHOLD) idle++;
+          if (lastSpeed > 5) moving++;
+          else if (lastIgnition && lastSpeed > 0) idle++;
           else stopped++;
         }
       });
@@ -101,7 +98,6 @@ export class DashboardService {
    */
   async getRecentAlerts() {
     try {
-      // Get recent alerts with safe fallback
       const alerts = await prisma.alert.findMany({
         where: { resolved: false },
         orderBy: { createdAt: 'desc' },
@@ -131,11 +127,8 @@ export class DashboardService {
   async getLiveVehicles() {
     try {
       const now = new Date();
-      const offlineThreshold = new Date(
-        now.getTime() - THRESHOLDS.DEVICE_OFFLINE_THRESHOLD * 60 * 1000
-      );
+      const offlineThreshold = new Date(now.getTime() - 30 * 60 * 1000); // 30 minutes
 
-      // Get live vehicles with safe fallback
       const vehicles = await prisma.vehicle.findMany({
         where: {
           status: 'active',
@@ -175,9 +168,9 @@ export class DashboardService {
           state:
             !lastSeen || lastSeen < offlineThreshold
               ? 'offline'
-              : lastSpeed > THRESHOLDS.MOVING_SPEED_THRESHOLD
+              : lastSpeed > 5
                 ? 'moving'
-                : lastIgnition && lastSpeed > THRESHOLDS.IDLE_SPEED_THRESHOLD
+                : lastIgnition && lastSpeed > 0
                   ? 'idle'
                   : 'stopped',
         };
@@ -189,7 +182,7 @@ export class DashboardService {
   }
 
   /**
-   * Get fuel statistics for the last 7 days
+   * Get fuel statistics for last N days
    */
   async getFuelStatistics(days: number = 7) {
     try {
@@ -241,7 +234,7 @@ export class DashboardService {
   }
 
   /**
-   * Get trip statistics for the last 30 days
+   * Get trip statistics for last N days
    */
   async getTripStatistics(days: number = 30) {
     try {

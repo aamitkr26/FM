@@ -1,7 +1,7 @@
 import { haversineKm } from '../../utils/haversine';
 import { logger } from '../../config/logger';
 import { THRESHOLDS } from '../../utils/constants';
-import { AlertService } from '../alerts/alerts.service';
+import { AlertsService } from '../alerts/alerts.service';
 
 interface OdometerAnalysis {
   suspicious: boolean;
@@ -14,10 +14,10 @@ interface OdometerAnalysis {
 }
 
 export class OdometerDetector {
-  private alertService: AlertService;
+  private alertService: AlertsService;
 
   constructor() {
-    this.alertService = new AlertService();
+    this.alertService = new AlertsService();
   }
 
   /**
@@ -88,7 +88,7 @@ export class OdometerDetector {
           deviation: Math.abs(gpsDistance - odometerDistance),
           confidence,
         },
-      }).catch((err) => logger.error(`Failed to create odometer alert: ${err}`));
+      }).catch((err: any) => logger.error(`Failed to create odometer alert: ${err}`));
 
       return {
         suspicious,
@@ -138,7 +138,7 @@ export class OdometerDetector {
           deviationPercent,
           confidence,
         },
-      }).catch((err) => logger.error(`Failed to create odometer alert: ${err}`));
+      }).catch((err: any) => logger.error(`Failed to create odometer alert: ${err}`));
     }
 
     // RULE 3: Compare dashboard odometer vs GPS odometer
@@ -178,7 +178,7 @@ export class OdometerDetector {
           odometerDistance,
           confidence,
         },
-      }).catch((err) => logger.error(`Failed to create odometer alert: ${err}`));
+      }).catch((err: any) => logger.error(`Failed to create odometer alert: ${err}`));
     }
 
     // RULE 5: Normal operation

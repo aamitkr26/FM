@@ -1,7 +1,7 @@
 import { prisma } from '../../config/database';
 import { logger } from '../../config/logger';
 import { haversineKm } from '../../utils/haversine';
-import { AlertService } from '../alerts/alerts.service';
+import { AlertsService } from '../alerts/alerts.service';
 
 interface GeofenceCheckResult {
   inside: boolean;
@@ -10,14 +10,14 @@ interface GeofenceCheckResult {
 }
 
 export class GeofenceEngine {
-  private alertService: AlertService;
+  private alertService: AlertsService;
   private vehicleGeofenceStates: Map<
     string,
     { geofenceId: string; inside: boolean; entryTime?: Date }
   >;
 
   constructor() {
-    this.alertService = new AlertService();
+    this.alertService = new AlertsService();
     this.vehicleGeofenceStates = new Map();
   }
 
