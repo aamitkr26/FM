@@ -1,34 +1,74 @@
 import { useRef, useState, useEffect } from 'react';
 import { 
-  Navigation, Circle, Clock, X, Share2, Filter, Download, ChevronRight, 
-  MapPin, Gauge, Shield, FileCheck, Receipt, CircleDot, ZoomIn, ZoomOut, 
-  Maximize2, Map, AlertCircle
+  Circle, X, ChevronRight, ZoomIn, ZoomOut, Maximize2, AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FleetMap } from '../FleetMap';
-import { dashboardApi, vehiclesApi, alertsApi } from '../../services/api';
+import { dashboardApi, alertsApi } from '../../services/api';
 import wsService from '../../services/websocket';
+
+const getVehicleStatus = (v) => {
+  if (!v.lastIgnition) return 'stopped';
+  if ((v.lastSpeed || 0) > 5) return 'moving';
+  return 'idling';
+};
+
+const getStatusText = (v) => {
+  const status = getVehicleStatus(v);
+  return status.charAt(0).toUpperCase() + status.slice(1);
+};
+
+const getTimeAgo = (timestamp) => {
+  if (!timestamp) return 'Unknown';
+  const date = new Date(timestamp);
+  const seconds = Math.floor((new Date() - date) / 1000);
+
+  if (seconds < 60) return 'Just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hr ago`;
+  return `${Math.floor(seconds / 86400)} day ago`;
+};
+
+const transformVehicle = (v) => ({
+  id: v.id,
+  number: v.registrationNo || v.imei,
+  manufacturer: v.make || 'unknown',
+  status: getVehicleStatus(v),
+  statusText: getStatusText(v),
+  speed: v.lastSpeed || 0,
+  lat: v.lastLat,
+  lng: v.lastLng,
+  address: 'Loading address...', // Could add reverse geocoding
+  lastUpdated: getTimeAgo(v.lastSeen),
+  todayTrips: 0, // Would come from trips API
+  todayDistance: '0 km',
+  totalKm: `${Math.round(v.gpsOdometer || 0)} km`,
+  driverName: 'N/A',
+  driverMobile: 'N/A',
+  vehicleModel: v.model || 'N/A',
+  vin: v.vin,
+  make: v.make,
+  model: v.model,
+  year: v.year,
+  fuelCapacity: v.fuelCapacity,
+  lastIgnition: v.lastIgnition,
+});
+
+const transformVehicles = (data) => data.map(transformVehicle);
 
 export function SupervisorDashboard({ onNavigate, selectedVehicleId }) {
   const [activeTab, setActiveTab] = useState('live');
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
   const baseZoom = 11;
-  const [mapZoom, setMapZoom] = useState(baseZoom);
+  const mapZoom = baseZoom;
   const leafletMapRef = useRef(null);
   const [detailVehicle, setDetailVehicle] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   
   // Data states
   const [vehicles, setVehicles] = useState([]);
-  const [stats, setStats] = useState({});
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const stopMapEvent = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
 
   const handleZoomIn = () => leafletMapRef.current?.zoomIn();
   const handleZoomOut = () => leafletMapRef.current?.zoomOut();
@@ -47,7 +87,7 @@ export function SupervisorDashboard({ onNavigate, selectedVehicleId }) {
           alertsApi.getAll({ resolved: false, limit: 10 })
         ]);
 
-        setStats(statsRes.data || {});
+        void statsRes;
         setVehicles(transformVehicles(vehiclesRes.data || []));
         setAlerts(alertsRes.data || []);
         setError(null);
@@ -90,59 +130,9 @@ export function SupervisorDashboard({ onNavigate, selectedVehicleId }) {
       const vehicle = vehicles.find(v => v.id === selectedVehicleId);
       if (vehicle) {
         setDetailVehicle(vehicle);
-        setSelectedVehicle(vehicle);
       }
     }
   }, [selectedVehicleId, vehicles]);
-
-  const transformVehicles = (data) => data.map(transformVehicle);
-
-  const transformVehicle = (v) => ({
-    id: v.id,
-    number: v.registrationNo || v.imei,
-    manufacturer: v.make || 'unknown',
-    status: getVehicleStatus(v),
-    statusText: getStatusText(v),
-    speed: v.lastSpeed || 0,
-    lat: v.lastLat,
-    lng: v.lastLng,
-    address: 'Loading address...', // Could add reverse geocoding
-    lastUpdated: getTimeAgo(v.lastSeen),
-    todayTrips: 0, // Would come from trips API
-    todayDistance: '0 km',
-    totalKm: `${Math.round(v.gpsOdometer || 0)} km`,
-    driverName: 'N/A',
-    driverMobile: 'N/A',
-    vehicleModel: v.model || 'N/A',
-    vin: v.vin,
-    make: v.make,
-    model: v.model,
-    year: v.year,
-    fuelCapacity: v.fuelCapacity,
-    lastIgnition: v.lastIgnition,
-  });
-
-  const getVehicleStatus = (v) => {
-    if (!v.lastIgnition) return 'stopped';
-    if ((v.lastSpeed || 0) > 5) return 'moving';
-    return 'idling';
-  };
-
-  const getStatusText = (v) => {
-    const status = getVehicleStatus(v);
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  };
-
-  const getTimeAgo = (timestamp) => {
-    if (!timestamp) return 'Unknown';
-    const date = new Date(timestamp);
-    const seconds = Math.floor((new Date() - date) / 1000);
-    
-    if (seconds < 60) return 'Just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hr ago`;
-    return `${Math.floor(seconds / 86400)} day ago`;
-  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -151,17 +141,6 @@ export function SupervisorDashboard({ onNavigate, selectedVehicleId }) {
       case 'stopped': return '#6B7280';
       default: return '#6B7280';
     }
-  };
-
-  const getManufacturerColor = (manufacturer) => {
-    const colors = {
-      tata: '#0066CC',
-      ashok: '#E63946',
-      mahindra: '#FF6B35',
-      eicher: '#2A9D8F',
-      millitrack: '#8E44AD',
-    };
-    return colors[manufacturer?.toLowerCase()] || '#6B7280';
   };
 
   const getSeverityColor = (severity) => {
@@ -229,7 +208,6 @@ export function SupervisorDashboard({ onNavigate, selectedVehicleId }) {
             const vehicle = vehicles.find(v => v.id === vehicleId);
             if (vehicle) {
               setDetailVehicle(vehicle);
-              setSelectedVehicle(vehicle);
             }
           }}
         />
@@ -338,7 +316,6 @@ export function SupervisorDashboard({ onNavigate, selectedVehicleId }) {
                   }`}
                   onClick={() => {
                     setDetailVehicle(vehicle);
-                    setSelectedVehicle(vehicle);
                   }}
                 >
                   {/* Status Indicator */}

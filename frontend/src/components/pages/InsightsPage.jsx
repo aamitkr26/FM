@@ -736,7 +736,7 @@ export function InsightsPage({ onNavigate }) {
                   <Card className="p-5 border border-[#E1E6EF]">
                     <h3 className="text-[#2A3547] mb-4 flex items-center gap-2" style={{ fontWeight: 600, fontSize: '16px' }}>
                       <Navigation2 size={18} className="text-[#27AE60]"/>
-                      Today's Activity
+                      Today&apos;s Activity
                     </h3>
                     <div className="space-y-3">
                       <div className="flex justify-between">
@@ -766,7 +766,7 @@ export function InsightsPage({ onNavigate }) {
                     </h3>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-[#67727E] text-sm">Today's Fuel Cost</span>
+                        <span className="text-[#67727E] text-sm">Today&apos;s Fuel Cost</span>
                         <span className="text-[#2A3547] font-medium">{selectedVehicle.dieselExpense.today}</span>
                       </div>
                       <div className="flex justify-between">

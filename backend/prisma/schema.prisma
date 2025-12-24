@@ -164,26 +164,27 @@ model Trip {
 }
 
 model Geofence {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
+  id                  String   @id @default(cuid())
+  name                String   @unique
+  description         String?
   
-  type        String   // circle | polygon
+  type                String   // circle | polygon
   
   // For circle type
-  centerLat   Float?
-  centerLng   Float?
-  radius      Float?   // meters
+  centerLat           Float?
+  centerLng           Float?
+  radius              Float?   // meters
   
   // For polygon type
-  polygon     Json?    // array of [lat, lng] coordinates
+  polygon             Json?    // array of [lat, lng] coordinates
   
-  active      Boolean  @default(true)
+  active              Boolean  @default(true)
+  expectedArrivalTime DateTime? // Optional expected arrival time for geofence
   
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
   
-  alerts      GeofenceAlert[]
+  alerts              GeofenceAlert[]
 }
 
 model GeofenceAlert {

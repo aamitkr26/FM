@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  MapPin, Plus, Edit, Trash2, AlertCircle, Circle, Shield 
+  MapPin, Plus, AlertCircle, Circle, Shield 
 } from 'lucide-react';
 import { geofenceApi } from '../../services/api';
 

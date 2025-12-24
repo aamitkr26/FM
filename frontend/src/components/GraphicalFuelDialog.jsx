@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { X, AlertTriangle, Send } from 'lucide-react';
 // Vehicle data configuration
@@ -68,12 +68,7 @@ export function GraphicalFuelDialog({ open, onOpenChange, vehicleNumber }) {
     const canvasRef = useRef(null);
     const [alertSent, setAlertSent] = useState(false);
     const currentVehicle = vehicleNumber ? vehicleData[vehicleNumber] || vehicleData['TN-01-AB-1234'] : vehicleData['TN-01-AB-1234'];
-    useEffect(() => {
-        if (open) {
-            drawFuelChart();
-        }
-    }, [open, vehicleNumber]);
-    const drawFuelChart = () => {
+    const drawFuelChart = useCallback(() => {
         const canvas = canvasRef.current;
         if (!canvas)
             return;
@@ -220,7 +215,7 @@ export function GraphicalFuelDialog({ open, onOpenChange, vehicleNumber }) {
         }
         ctx.stroke();
         // Draw main data points (actual sensor readings)
-        points.forEach((point, i) => {
+        points.forEach((point) => {
             ctx.fillStyle = '#3b82f6';
             ctx.beginPath();
             ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
@@ -301,7 +296,12 @@ export function GraphicalFuelDialog({ open, onOpenChange, vehicleNumber }) {
             ctx.textAlign = 'center';
             ctx.fillText('(Engine Started)', bracketX, bracketTopY + bracketHeight + 15);
         }
-    };
+    }, [currentVehicle]);
+    useEffect(() => {
+        if (open) {
+            drawFuelChart();
+        }
+    }, [open, drawFuelChart]);
     const handleAlertManager = () => {
         setAlertSent(true);
         setTimeout(() => {

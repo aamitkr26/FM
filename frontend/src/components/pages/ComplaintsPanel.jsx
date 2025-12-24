@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle, Clock, Filter, AlertCircle } from 'lucide-react';
 import { alertsApi } from '../../services/api';
 
@@ -8,11 +8,7 @@ export function ComplaintsPanel() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
 
-  useEffect(() => {
-    fetchAlerts();
-  }, [filter]);
-
-  const fetchAlerts = async () => {
+  const fetchAlerts = useCallback(async () => {
     try {
       setLoading(true);
       const params = filter !== 'all' ? { severity: filter } : {};
@@ -25,7 +21,11 @@ export function ComplaintsPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    fetchAlerts();
+  }, [fetchAlerts]);
 
   const handleResolve = async (id) => {
     try {

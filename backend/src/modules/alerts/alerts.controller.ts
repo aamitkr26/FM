@@ -7,7 +7,7 @@ const alertService = new AlertService();
 
 export class AlertsController {
   /**
-   * Get alerts (GET /api/alerts)
+   * GET /api/alerts
    */
   async getAlerts(req: Request, res: Response, next: NextFunction) {
     try {
@@ -24,7 +24,7 @@ export class AlertsController {
   }
 
   /**
-   * Get alert by ID (GET /api/alerts/:id)
+   * GET /api/alerts/:id
    */
   async getAlertById(req: Request, res: Response, next: NextFunction) {
     try {
@@ -42,12 +42,12 @@ export class AlertsController {
   }
 
   /**
-   * Resolve alert (POST /api/alerts/:id/resolve)
+   * POST /api/alerts/:id/resolve
    */
   async resolveAlert(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const resolvedBy = req.user?.email || 'system';
+      const resolvedBy = req.user?.email ?? 'system';
 
       const alert = await alertService.resolveAlert(id, resolvedBy);
 
@@ -61,15 +61,15 @@ export class AlertsController {
   }
 
   /**
-   * Get alert statistics (GET /api/alerts/statistics)
+   * GET /api/alerts/statistics
    */
   async getStatistics(req: Request, res: Response, next: NextFunction) {
     try {
       const { vehicleId, days } = req.query;
 
       const stats = await alertService.getAlertStatistics(
-        vehicleId as string | undefined,
-        days ? parseInt(days as string, 10) : undefined
+        vehicleId ? String(vehicleId) : undefined,
+        days ? Number(days) : undefined
       );
 
       res.json(stats);

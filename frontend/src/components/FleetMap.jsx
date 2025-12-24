@@ -22,6 +22,7 @@ export function FleetMap(props) {
     const [liveById, setLiveById] = useState({});
     const socketRef = useRef(null);
     const mapInstanceRef = useRef(null);
+    const externalMapRef = props.mapRef;
     const backendUrl = props.backendUrl ??
         (import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || 'http://localhost:4000');
     useEffect(() => {
@@ -82,8 +83,8 @@ export function FleetMap(props) {
     return (<div className={props.className} style={{ position: "relative", height: "100%", width: "100%" }}>
       <MapContainer center={center} zoom={zoom} zoomControl={false} className="absolute inset-0 z-0" style={{ height: "100%", width: "100%" }} whenCreated={(map) => {
             mapInstanceRef.current = map;
-            if (props.mapRef)
-                props.mapRef.current = map;
+            if (externalMapRef)
+                externalMapRef.current = map;
             props.onZoomChange?.(map.getZoom());
             map.on("zoomend", () => props.onZoomChange?.(map.getZoom()));
         }}>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   AlertTriangle, TrendingDown, TrendingUp, Filter, 
-  Calendar, Download, Search, AlertCircle
+  Download, AlertCircle
 } from 'lucide-react';
 import { fuelApi, vehiclesApi } from '../../services/api';
 

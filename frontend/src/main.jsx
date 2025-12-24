@@ -46,7 +46,16 @@ window.addEventListener("error", (event) => {
     renderFatalError(event.error ?? event.message);
 });
 window.addEventListener("unhandledrejection", (event) => {
-    renderFatalError(event.reason);
+    const reason = event.reason;
+    if (reason && typeof reason === "object") {
+        const maybeAny = reason;
+        if (maybeAny.name === "ApiError") {
+            console.error("Unhandled ApiError", reason);
+            event.preventDefault();
+            return;
+        }
+    }
+    renderFatalError(reason);
 });
 async function bootstrap() {
     try {

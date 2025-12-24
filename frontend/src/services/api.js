@@ -30,15 +30,34 @@ const request = async (endpoint, options = {}) => {
       ...getAuthHeaders(),
       ...options.headers,
     },
+    credentials: 'include',
   };
 
   try {
     const response = await fetch(url, config);
-    const data = await response.json();
+    let data = null;
+    
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    // Handle 401 Unauthorized - clear auth and redirect to login
+    if (response.status === 401) {
+      localStorage.removeItem('fleet.token');
+      localStorage.removeItem('fleet.role');
+      localStorage.removeItem('fleet.email');
+      // Only redirect if not already on login page
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+      throw new ApiError('Session expired. Please login again.', 401, data);
+    }
 
     if (!response.ok) {
       throw new ApiError(
-        data.message || 'Request failed',
+        (data && (data.error || data.message)) || 'Request failed',
         response.status,
         data
       );
@@ -157,9 +176,21 @@ export const alertsApi = {
 
 // Dashboard API
 export const dashboardApi = {
-  getStats: () => request('/api/dashboard/stats'),
+  getStats: () => request('/api/dashboard/statistics'),
 
-  getFleetOverview: () => request('/api/dashboard/fleet-overview'),
+  getLiveVehicles: () => request('/api/dashboard/live'),
+
+  getRecentAlerts: () => request('/api/dashboard/alerts'),
+
+  getFuelStats: (params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return request(`/api/dashboard/fuel-stats${queryParams ? `?${queryParams}` : ''}`);
+  },
+
+  getTripStats: (params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return request(`/api/dashboard/trip-stats${queryParams ? `?${queryParams}` : ''}`);
+  },
 };
 
 // Geofence API (to be implemented in backend if not exists)
