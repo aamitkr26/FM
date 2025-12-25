@@ -82,8 +82,8 @@ export function OwnerDashboard({ onNavigate, selectedVehicleId }) {
         
         // Fetch in parallel
         const [statsRes, vehiclesRes, alertsRes] = await Promise.all([
-          dashboardApi.getStats(),
-          dashboardApi.getLiveVehicles(),
+          dashboardApi.getStatistics(),
+          dashboardApi.getLive(),
           alertsApi.getAll({ resolved: false, limit: 10 })
         ]);
 
@@ -214,17 +214,17 @@ export function OwnerDashboard({ onNavigate, selectedVehicleId }) {
       </div>
 
       {/* Top Bar */}
-      <div className="absolute top-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-sm border-b border-slate-200 flex items-center justify-between px-6 z-10">
-        <div className="flex items-center gap-4">
-          <h2 className="text-lg font-semibold text-slate-900">Fleet Overview</h2>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full">
+      <div className="absolute top-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-sm border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 z-10">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <h2 className="text-base sm:text-lg font-semibold text-slate-900">Fleet Overview</h2>
+          <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <span className="px-2 sm:px-3 py-1 bg-green-100 text-green-700 rounded-full">
               {vehicleStats.moving} Moving
             </span>
-            <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full">
+            <span className="px-2 sm:px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full">
               {vehicleStats.idling} Idle
             </span>
-            <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full">
+            <span className="px-2 sm:px-3 py-1 bg-gray-100 text-gray-700 rounded-full">
               {vehicleStats.stopped} Stopped
             </span>
           </div>
@@ -259,7 +259,7 @@ export function OwnerDashboard({ onNavigate, selectedVehicleId }) {
       </div>
 
       {/* Left Sidebar - Vehicle List */}
-      <div className="absolute left-6 top-20 bottom-6 w-80 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl flex flex-col overflow-hidden z-10">
+      <div className="absolute left-2 sm:left-6 top-20 bottom-6 w-72 sm:w-80 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl flex flex-col overflow-hidden z-10">
         {/* Tabs */}
         <div className="flex border-b border-slate-200">
           <button
@@ -352,7 +352,7 @@ export function OwnerDashboard({ onNavigate, selectedVehicleId }) {
       </div>
 
       {/* Right Sidebar - Alerts */}
-      <div className="absolute right-6 top-20 w-80 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden z-10">
+      <div className="absolute right-2 sm:right-6 top-20 w-72 sm:w-80 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden z-10">
         <div className="px-4 py-3 border-b border-slate-200">
           <h3 className="font-semibold text-slate-900">Recent Alerts</h3>
         </div>
@@ -394,7 +394,7 @@ export function OwnerDashboard({ onNavigate, selectedVehicleId }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-20 p-6"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-20 p-4 sm:p-6"
             onClick={() => setDetailVehicle(null)}
           >
             <motion.div
@@ -425,7 +425,7 @@ export function OwnerDashboard({ onNavigate, selectedVehicleId }) {
                 {/* Status Overview */}
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900 mb-3">Current Status</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="p-3 bg-slate-50 rounded-lg">
                       <p className="text-xs text-slate-600">Status</p>
                       <p className="text-sm font-semibold text-slate-900 mt-1">{detailVehicle.statusText}</p>

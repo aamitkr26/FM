@@ -43,10 +43,10 @@ export class AuthController {
         });
       }
 
-      // Generate JWT tokens
-      const accessToken = jwt.sign(
+      // Generate JWT token (single access token as per specification)
+      const token = jwt.sign(
         { 
-          userId: user.id, 
+          id: user.id, 
           email: user.email, 
           role: user.role,
           companyId: (user as any).companyId
@@ -55,28 +55,13 @@ export class AuthController {
         { expiresIn: env.auth.jwtExpiresIn } as SignOptions
       );
 
-      const refreshToken = jwt.sign(
-        { userId: user.id },
-        env.auth.jwtRefreshSecret,
-        { expiresIn: env.auth.jwtRefreshExpiresIn } as SignOptions
-      );
-
-      // Return user data with tokens
+      // Return exact contract: { token, user: { id, email, role } }
       return res.json({
-        success: true,
-        message: 'Login successful',
-        data: {
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            companyId: (user as any).companyId
-          },
-          tokens: {
-            accessToken,
-            refreshToken
-          }
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role
         }
       });
     } catch (error) {

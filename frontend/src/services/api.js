@@ -237,7 +237,8 @@ export const tripsApi = {
   getById: (id) => request(`/api/trips/${id}`),
 };
 
-export default {
+// Export API instance
+export const api = {
   auth: authApi,
   vehicles: vehiclesApi,
   telemetry: telemetryApi,
@@ -247,3 +248,5 @@ export default {
   geofence: geofenceApi,
   trips: tripsApi,
 };
+
+export default api;

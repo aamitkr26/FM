@@ -1,10 +1,10 @@
 import http from 'http';
-import { Server } from 'socket.io';
 import { createApp } from './app';
 import { env } from './config/env';
 import { logger } from './config/logger';
 import { prisma } from './config/database';
 import { getGPSPoller } from './gps/poller.service';
+import { WebSocketService } from './websocket';
 
 // Create Express app
 const app = createApp();
@@ -12,26 +12,19 @@ const app = createApp();
 // Create HTTP server
 const server = http.createServer(app);
 
-// Create Socket.IO server
-const io = new Server(server, {
+// Create WebSocket service (single source of truth)
+const wsService = new WebSocketService(server, {
   cors: {
     origin: env.cors.origins,
-    credentials: true,
+    methods: ["GET", "POST"],
+    credentials: true
   },
   path: '/socket.io',
+  transports: ['websocket', 'polling']
 });
 
-// Socket.IO connection handling
-io.on('connection', (socket) => {
-  logger.info(`WebSocket client connected: ${socket.id}`);
-
-  socket.on('disconnect', () => {
-    logger.info(`WebSocket client disconnected: ${socket.id}`);
-  });
-});
-
-// Make io available globally for broadcasting
-export { io };
+// Make wsService available globally for broadcasting
+export { wsService };
 
 // GPS Poller instance
 let gpsPoller: ReturnType<typeof getGPSPoller> | null = null;

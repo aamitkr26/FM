@@ -6,15 +6,19 @@ import { authenticateSocket } from '../middleware/socketAuth';
 export class WebSocketService {
   private io: SocketIOServer;
 
-  constructor() {
-    this.io = new SocketIOServer({
-      cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:5173",
-        methods: ["GET", "POST"],
-        credentials: true
-      },
-      transports: ['websocket', 'polling']
-    });
+  constructor(server?: HttpServer, options?: any) {
+    if (server && options) {
+      this.io = new SocketIOServer(server, options);
+    } else {
+      this.io = new SocketIOServer({
+        cors: {
+          origin: process.env.FRONTEND_URL || "http://localhost:5173",
+          methods: ["GET", "POST"],
+          credentials: true
+        },
+        transports: ['websocket', 'polling']
+      });
+    }
 
     this.setupMiddleware();
     this.setupEventHandlers();
@@ -65,14 +69,6 @@ export class WebSocketService {
    */
   getServer(): SocketIOServer {
     return this.io;
-  }
-
-  /**
-   * Attach WebSocket server to HTTP server
-   */
-  attach(server: HttpServer) {
-    this.io.attach(server);
-    logger.info('WebSocket server attached to HTTP server');
   }
 
   /**
@@ -144,5 +140,3 @@ export class WebSocketService {
   }
 }
 
-// Export singleton instance
-export const wsService = new WebSocketService();

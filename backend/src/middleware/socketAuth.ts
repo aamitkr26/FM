@@ -16,7 +16,7 @@ export function authenticateSocket(socket: any, next: any) {
     
     // Attach user to socket
     socket.user = {
-      userId: decoded.userId,
+      id: decoded.id,
       email: decoded.email,
       role: decoded.role,
       companyId: decoded.companyId
