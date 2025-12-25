@@ -1,6 +1,6 @@
 import L from "leaflet";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
@@ -14,7 +14,7 @@ const defaultMarkerIcon = new L.Icon({
     popupAnchor: [1, -34],
     shadowSize: [41, 41],
 });
-export function FleetMap(props) {
+export const FleetMap = forwardRef(function FleetMap(props, ref) {
     const center = props.center ?? [28.6139, 77.209];
     const zoom = props.zoom ?? 11;
     const providedVehicles = props.vehicles;
@@ -24,7 +24,7 @@ export function FleetMap(props) {
     const mapInstanceRef = useRef(null);
     const externalMapRef = props.mapRef;
     const backendUrl = props.backendUrl ??
-        (process.env.REACT_APP_WS_URL || process.env.REACT_APP_API_URL || 'http://localhost:4000');
+        (process.env.REACT_APP_WS_URL || process.env.REACT_APP_API_URL || 'http://127.0.0.1:4000');
     useEffect(() => {
         // If caller supplies vehicles, we don't auto-connect.
         if (providedVehicles)
@@ -82,6 +82,14 @@ export function FleetMap(props) {
             map.removeControl(map.zoomControl);
         }
     }, []);
+
+    useImperativeHandle(ref, () => ({
+        zoomIn: () => mapInstanceRef.current?.zoomIn(),
+        zoomOut: () => mapInstanceRef.current?.zoomOut(),
+        setZoom: (z) => mapInstanceRef.current?.setZoom(z),
+        getZoom: () => mapInstanceRef.current?.getZoom(),
+    }));
+
     return (<div className={props.className} style={{ position: "relative", height: "100%", width: "100%" }}>
       <MapContainer center={center} zoom={zoom} zoomControl={false} className="absolute inset-0 z-0" style={{ height: "100%", width: "100%" }} whenCreated={(map) => {
             mapInstanceRef.current = map;
@@ -103,4 +111,4 @@ export function FleetMap(props) {
           </Marker>))}
       </MapContainer>
     </div>);
-}
+});

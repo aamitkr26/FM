@@ -43,13 +43,20 @@ const request = async (endpoint, options = {}) => {
       data = null;
     }
 
-    // Handle 401 Unauthorized - clear auth and redirect to login
+    // Handle 401 Unauthorized - clear auth and redirect to login (except for auth endpoints)
     if (response.status === 401) {
-      localStorage.removeItem('fleet.token');
-      localStorage.removeItem('fleet.role');
-      localStorage.removeItem('fleet.email');
-      window.location.href = '/';
-      throw new ApiError('Session expired. Please login again.', 401, data);
+      const isAuthEndpoint =
+        endpoint === '/api/auth/login' || endpoint === '/api/auth/register' || endpoint === '/api/auth/refresh';
+
+      if (!isAuthEndpoint) {
+        localStorage.removeItem('fleet.token');
+        localStorage.removeItem('fleet.role');
+        localStorage.removeItem('fleet.email');
+        window.location.href = '/';
+        throw new ApiError('Session expired. Please login again.', 401, data);
+      }
+
+      throw new ApiError((data && (data.error || data.message)) || 'Unauthorized', 401, data);
     }
 
     if (!response.ok) {
