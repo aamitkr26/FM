@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '../ui/card';
 import { Truck } from 'lucide-react';
+import { api } from '../../services/api';
 
 export function LoginPage({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -17,50 +18,20 @@ export function LoginPage({ onLogin }) {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const apiBaseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:4000')
-    .replace(/\/$/, '');
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
 
     try {
-      console.log('Attempting login to:', `${apiBaseUrl}/api/auth/login`);
+      console.log('Attempting login with centralized API client');
       console.log('Login payload:', { email: username, password: '***' });
       
-      const res = await fetch(`${apiBaseUrl}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: username,
-          password,
-        }),
-        credentials: 'include',
-      });
+      const data = await api.auth.login({ email: username, password });
+      console.log('Login response:', data);
 
-      const data = await res.json().catch(() => ({}));
-      console.log('Login response:', { 
-        status: res.status, 
-        statusText: res.statusText,
-        ok: res.ok,
-        data 
-      });
-
-      if (!res.ok) {
-        const msg =
-          data?.error ||
-          data?.message ||
-          `Login failed (${res.status})`;
-        console.error('Login failed:', msg);
-        throw new Error(msg);
-      }
-
-      // Accept BOTH backend formats safely
-      const token = data?.accessToken || data?.token;
-      const user = data?.user || data;
+      // Extract token and user from exact API contract response
+      const { token, user } = data;
 
       if (!token) {
         console.error('No token in response:', data);

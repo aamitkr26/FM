@@ -20,7 +20,7 @@ export function VehicleTracking() {
         const fetchVehicles = async () => {
             try {
                 setLoading(true);
-                const response = await dashboardApi.getLiveVehicles();
+                const response = await dashboardApi.getLive();
                 const vehicleData = response.data || [];
                 
                 // Transform backend data to map format

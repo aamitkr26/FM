@@ -1,8 +1,12 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import { DashboardController } from './dashboard.controller';
+import { authenticate } from '../../middleware/auth';
 
 const router: ExpressRouter = Router();
 const dashboardController = new DashboardController();
+
+// Apply authentication middleware to all dashboard routes
+router.use(authenticate);
 
 // Get fleet statistics
 router.get('/statistics', dashboardController.getStatistics.bind(dashboardController));

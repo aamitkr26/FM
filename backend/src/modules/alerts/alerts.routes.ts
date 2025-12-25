@@ -1,8 +1,12 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import { AlertsController } from './alerts.controller';
+import { authenticate } from '../../middleware/auth';
 
 const router: ExpressRouter = Router();
 const alertsController = new AlertsController();
+
+// Apply authentication middleware to all alerts routes
+router.use(authenticate);
 
 // Get all alerts
 router.get('/', alertsController.getAll.bind(alertsController));

@@ -80,15 +80,15 @@ export function SupervisorDashboard({ onNavigate, selectedVehicleId }) {
       try {
         setLoading(true);
         
-        // Fetch with individual error handling for partial failures
-        const results = await Promise.allSettled([
-          dashboardApi.getStats(),
-          dashboardApi.getLiveVehicles(),
+        // Fetch in parallel
+        const [statsRes, vehiclesRes, alertsRes] = await Promise.all([
+          dashboardApi.getStatistics(),
+          dashboardApi.getLive(),
           alertsApi.getAll({ resolved: false, limit: 10 })
         ]);
 
         // Process each result individually
-        const [statsResult, vehiclesResult, alertsResult] = results;
+        const [statsResult, vehiclesResult, alertsResult] = [statsRes, vehiclesRes, alertsRes];
         
         // Handle vehicles data
         if (vehiclesResult.status === 'fulfilled') {
