@@ -52,12 +52,33 @@ const envSchemaBase = z.object({
   MILLITRACK_TOKEN: z.string().optional(),
 });
 
+const databaseUrlNeedsDirect = (raw: string): boolean => {
+  try {
+    const url = new URL(raw);
+    const host = url.hostname.toLowerCase();
+
+    if (host.endsWith('.pooler.supabase.com')) return true;
+    if (url.searchParams.get('pgbouncer') === 'true') return true;
+    if (url.port === '6543') return true;
+
+    return false;
+  } catch {
+    return false;
+  }
+};
+
 const envSchema = envSchemaBase.superRefine((data, ctx) => {
-  if (!isDevScript && data.NODE_ENV === 'production' && !data.DIRECT_URL) {
+  if (
+    !isDevScript &&
+    data.NODE_ENV === 'production' &&
+    databaseUrlNeedsDirect(data.DATABASE_URL) &&
+    !data.DIRECT_URL
+  ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['DIRECT_URL'],
-      message: 'DIRECT_URL is required in production (needed for prisma migrate deploy on Supabase). For local dev, set NODE_ENV=development or provide DIRECT_URL.',
+      message:
+        'DIRECT_URL is required in production when using Supabase pooler/pgbouncer (needed for prisma migrate deploy). Set DIRECT_URL to the Supabase direct connection (port 5432, sslmode=require).',
     });
   }
 });
