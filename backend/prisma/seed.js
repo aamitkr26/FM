@@ -1,9 +1,9 @@
-import bcrypt from 'bcryptjs';
-import dotenv from 'dotenv';
-import path from 'path';
-import { PrismaClient } from '@prisma/client';
+const bcrypt = require('bcryptjs');
+const dotenv = require('dotenv');
+const path = require('path');
+const { PrismaClient } = require('@prisma/client');
 
-const normalizeDatabaseUrl = (raw?: string): string | undefined => {
+const normalizeDatabaseUrl = (raw) => {
   if (!raw) return raw;
 
   try {
@@ -45,12 +45,7 @@ if (normalizedDirect && normalizedDirect !== process.env.DIRECT_URL) {
   process.env.DIRECT_URL = normalizedDirect;
 }
 
-type DemoUser = {
-  email: string;
-  role: string;
-};
-
-const demoUsers: DemoUser[] = [
+const demoUsers = [
   { email: 'owner@fleet.com', role: 'owner' },
   { email: 'supervisor@fleet.com', role: 'supervisor' },
   { email: 'admin@fleet.com', role: 'admin' },
@@ -88,4 +83,4 @@ async function main() {
   }
 }
 
-void main();
+main();

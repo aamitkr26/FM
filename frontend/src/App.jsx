@@ -1,4 +1,4 @@
-import { useState, type ComponentType } from 'react';
+import { useState } from 'react';
 import { LoginPage } from './components/pages/LoginPage';
 import { DashboardLayout } from './components/DashboardLayout';
 import { OwnerDashboard } from './components/pages/OwnerDashboard';
@@ -12,34 +12,32 @@ import { Settings } from './components/pages/Settings';
 import { ReportsData } from './components/pages/ReportsData';
 import { CompanyRoutes } from './components/pages/CompanyRoutes';
 
-const LoginPageAny = LoginPage as unknown as ComponentType<any>;
-const DashboardLayoutAny = DashboardLayout as unknown as ComponentType<any>;
-const OwnerDashboardAny = OwnerDashboard as unknown as ComponentType<any>;
-const SupervisorDashboardAny = SupervisorDashboard as unknown as ComponentType<any>;
-const AdminDashboardAny = AdminDashboard as unknown as ComponentType<any>;
-const GeofencingPageAny = GeofencingPage as unknown as ComponentType<any>;
-const FuelReportsAny = FuelReports as unknown as ComponentType<any>;
-const ComplaintsPanelAny = ComplaintsPanel as unknown as ComponentType<any>;
-const SettingsAny = Settings as unknown as ComponentType<any>;
-const ReportsDataAny = ReportsData as unknown as ComponentType<any>;
-const CompanyRoutesAny = CompanyRoutes as unknown as ComponentType<any>;
-
-type Page = 'dashboard' | 'vehicles' | 'fuel' | 'complaints' | 'settings' | 'reports' | 'routes';
+const LoginPageAny = LoginPage;
+const DashboardLayoutAny = DashboardLayout;
+const OwnerDashboardAny = OwnerDashboard;
+const SupervisorDashboardAny = SupervisorDashboard;
+const AdminDashboardAny = AdminDashboard;
+const GeofencingPageAny = GeofencingPage;
+const FuelReportsAny = FuelReports;
+const ComplaintsPanelAny = ComplaintsPanel;
+const SettingsAny = Settings;
+const ReportsDataAny = ReportsData;
+const CompanyRoutesAny = CompanyRoutes;
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
     const token = localStorage.getItem('fleet.token');
     return !!token;
   });
 
-  const [userRole, setUserRole] = useState<string>(() => {
+  const [userRole, setUserRole] = useState(() => {
     return localStorage.getItem('fleet.role') || 'user';
   });
 
-  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(undefined);
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [selectedVehicleId, setSelectedVehicleId] = useState(undefined);
 
-  const handleLogin = (role: string) => {
+  const handleLogin = (role) => {
     setUserRole(role);
     setIsLoggedIn(true);
     setCurrentPage('dashboard');
@@ -55,7 +53,7 @@ export default function App() {
     setSelectedVehicleId(undefined);
   };
 
-  const handleNavigate = (page: Page, vehicleId?: string) => {
+  const handleNavigate = (page, vehicleId) => {
     setCurrentPage(page);
     setSelectedVehicleId(vehicleId);
   };
